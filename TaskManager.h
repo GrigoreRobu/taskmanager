@@ -7,21 +7,21 @@
 #include <condition_variable>
 #include <future>
 
-using namespace std;
+#pragma once
 
 class SafeQueue
 {
 private:
-    queue<function<void()>> q;
-    mutex mtx;
+    std::queue<std::function<void()>> q;
+    std::mutex mtx;
 
 public:
     SafeQueue()
     {
     }
-    bool Push(function<void()> item)
+    bool Push(std::function<void()> item)
     {
-        lock_guard<mutex> lock(mtx);
+        std::lock_guard<std::mutex> lock(mtx);
         try
         {
             q.push(move(item));
@@ -33,8 +33,8 @@ public:
             return false;
         }
     }
-    function<void()> Pop(){
-        lock_guard<mutex> lock(mtx);
+    std::function<void()> Pop(){
+        std::lock_guard<std::mutex> lock(mtx);
         if(q.empty()){
             return{};
         }
@@ -43,7 +43,7 @@ public:
         return f;
     }
     bool isEmpty(){
-        lock_guard<mutex> lock(mtx);
+        std::lock_guard<std::mutex> lock(mtx);
         if(q.empty()) return true;
         return false;
     }
@@ -51,19 +51,19 @@ public:
 };
 class ThreadPool{
     private:
-    vector<thread> workers;
+    std::vector<std::thread> workers;
     SafeQueue work;
-    condition_variable cv;
-    atomic<bool> stopFlag;
-    mutex mtx;
+    std::condition_variable cv;
+    std::atomic<bool> stopFlag;
+    std::mutex mtx;
     public:
     
     ThreadPool(int NumberOfThreads){
+        stopFlag=false;
         for(int i =0;i<NumberOfThreads;i++){
-            stopFlag=false;
-            workers.push_back(thread([this](){
+            workers.push_back(std::thread([this](){
                 while(true){
-                    unique_lock<mutex> lock(mtx);
+                    std::unique_lock<std::mutex> lock(mtx);
                     cv.wait(lock, [this]{ return stopFlag || !work.isEmpty();});
                     if(stopFlag && work.isEmpty()){
                         return;
@@ -77,11 +77,11 @@ class ThreadPool{
     }
 
     template <typename Func, typename... Args>
-    auto Enqueue(Func&& func, Args&&... args) -> future<invoke_result_t<Func, Args...>>{
-        using type = invoke_result_t<Func, Args...>;
-        auto task = make_shared<packaged_task<type()>>(bind(forward<Func>(func),forward<Args>(args)...));
-        future<type> res = task->get_future();
-        function<void()> disguise = [task](){(*task)();};
+    auto Enqueue(Func&& func, Args&&... args) -> std::future<std::invoke_result_t<Func, Args...>>{
+        using type = std::invoke_result_t<Func, Args...>;
+        auto task = std::make_shared<std::packaged_task<type()>>(std::bind(std::forward<Func>(func),std::forward<Args>(args)...));
+        std::future<type> res = task->get_future();
+        std::function<void()> disguise = [task](){(*task)();};
         work.Push(disguise);
         cv.notify_one();
         return res;
