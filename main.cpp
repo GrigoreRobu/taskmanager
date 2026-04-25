@@ -1,23 +1,18 @@
-#include <chrono>
 #include "TaskManager.h"
-using namespace std;
+#include <iostream>
 
-void task(int ID){
-    cout<<"Worker thread "<< this_thread::get_id() <<" is starting its task." << ID<<endl;
-    this_thread::sleep_for(chrono::seconds(1));
-    cout<<"Task "<< ID<<" is done."<<endl;
-
+int multiply(int a, int b) {
+    return a * b;
 }
 
-int main(){
-    ThreadPool pool(3);
+int main() {
+    ThreadPool pool(4);
 
-    for(int i = 0; i<=6;i++){
-        pool.Enqueue([i](){task(i);});
-    }
-    cout << "Main thread is hanging out while workers do the job..." << endl;
-    this_thread::sleep_for(chrono::seconds(6));
-    cout << "Main thread exiting. Pool destructor will now clean up." << endl;
+    pool.Enqueue([] { std::cout << "Background task running..." << std::endl; });
+
+    auto ticket = pool.Enqueue(multiply, 10, 5);
+
+    std::cout << "The result is: " << ticket.get() << std::endl; 
 
     return 0;
 }

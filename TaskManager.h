@@ -5,6 +5,7 @@
 #include <mutex>
 #include <atomic>
 #include <condition_variable>
+#include <future>
 
 using namespace std;
 
@@ -75,9 +76,15 @@ class ThreadPool{
         }
     }
 
-    void Enqueue(function<void()> func){
-        work.Push(func);
+    template <typename Func, typename... Args>
+    auto Enqueue(Func&& func, Args&&... args) -> future<invoke_result_t<Func, Args...>>{
+        using type = invoke_result_t<Func, Args...>;
+        auto task = make_shared<packaged_task<type()>>(bind(forward<Func>(func),forward<Args>(args)...));
+        future<type> res = task->get_future();
+        function<void()> disguise = [task](){(*task)();};
+        work.Push(disguise);
         cv.notify_one();
+        return res;
     }
     ~ThreadPool(){
         stopFlag=true;
