@@ -1,0 +1,17 @@
+# Compiled binaries
+*.exe
+*.out
+*.o
+*.obj
+
+# Build directories
+build/
+out/
+bin/
+
+# VS Code settings
+.vscode/
+
+# Windows artifacts
+Thumbs.db
+Desktop.ini

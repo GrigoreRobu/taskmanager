@@ -1,18 +1,23 @@
 #include "TaskManager.h"
 #include <iostream>
+#include <chrono>
 
 int multiply(int a, int b) {
     return a * b;
 }
 
 int main() {
-    ThreadPool pool(4);
+    ThreadPool pool(12);
+    auto start = std::chrono::high_resolution_clock::now();
 
-    pool.Enqueue([] { std::cout << "Background task running..." << std::endl; });
+    for(int i = 0; i<1000000;i++){
+        auto ticket = pool.Enqueue(multiply, 10, i);
+    }
+    std::cout <<"ceva"<<std::endl;
+    auto end = std::chrono::high_resolution_clock::now();
 
-    auto ticket = pool.Enqueue(multiply, 10, 5);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-    std::cout << "The result is: " << ticket.get() << std::endl; 
-
+    std::cout << "Total time: " << ms << " ms\n";
     return 0;
 }
